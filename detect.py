@@ -142,7 +142,7 @@ def main():
         imlist.append(osp.join(osp.realpath('.'), images))
     except FileNotFoundError:
         print ("No file or directory with the name {}".format(images))
-        exit()
+        return()
         
     if not os.path.exists(args.det):
         os.makedirs(args.det)
@@ -220,7 +220,7 @@ def main():
         end = time.time()
         
                     
-#        print(end - start)
+        print(end - start)
 
             
 
@@ -254,7 +254,8 @@ def main():
         output
     except NameError:
         print("No detections were made")
-        exit()
+        return()
+        
         
     im_dim_list = torch.index_select(im_dim_list, 0, output[:,0].long())
     
@@ -284,11 +285,11 @@ def main():
     draw = time.time()
 
 
-    def write(x, batches, results):
+    def write(x, batches, results): #検出時の処理　
         c1 = tuple(x[1:3].int())
         c2 = tuple(x[3:5].int())
         img = results[int(x[0])]
-        cls = int(x[-1])
+        cls = int(x[-1]) #何を検出したか.変更すると何個検出したか。
         label = "{0}".format(classes[cls])
         color = random.choice(colors)
         cv2.rectangle(img, c1, c2,color, 1)
@@ -306,7 +307,7 @@ def main():
     list(map(cv2.imwrite, det_names, orig_ims))
     
     end = time.time()
-    
+    #検出の合計数
     print()
     print("SUMMARY")
     print("----------------------------------------------------------")
@@ -322,6 +323,10 @@ def main():
 
     
     torch.cuda.empty_cache()
+    return()
+
+
+
     
     
         

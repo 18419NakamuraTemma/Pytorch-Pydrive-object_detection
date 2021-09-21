@@ -1,6 +1,7 @@
 from __future__ import division
 
-import torch 
+import torch
+from torch._C import CudaBFloat16StorageBase 
 import torch.nn as nn
 import torch.nn.functional as F 
 from torch.autograd import Variable
@@ -94,7 +95,7 @@ class DetectionLayer(nn.Module):
         x = x.data
         global CUDA
         prediction = x
-        prediction = predict_transform(prediction, inp_dim, self.anchors, num_classes, confidence, CUDA)
+        prediction = predict_transform(prediction, inp_dim, self.anchors, num_classes, confidence,CUDA)
         return prediction
         
 

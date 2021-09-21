@@ -1,7 +1,7 @@
-client_config_backend: settings
+client_config_backend: settings #自分の設定を書き込む
 client_config:
-  client_id: <your id>
-  client_secret: <your secret>
+  client_id: 808993726729-j5idgldrrac79jfaodo1qb5uv25p47k5.apps.googleusercontent.com
+  client_secret: KttmP_RBob9yHmhOH1hlMmvY
 
 save_credentials: True
 save_credentials_backend: file
@@ -10,5 +10,6 @@ save_credentials_file: credentials.json
 get_refresh_token: True
 
 oauth_scope:
-  - https://www.googleapis.com/auth/drive.file
-  - https://www.googleapis.com/auth/drive.install
+  - https://www.googleapis.com/auth/drive
+ # - https://www.googleapis.com/auth/drive.file
+ # - https://www.googleapis.com/auth/drive.install
