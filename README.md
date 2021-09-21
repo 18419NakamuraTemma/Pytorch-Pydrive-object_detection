@@ -12,12 +12,9 @@ document it as well as I can.
 3. PyTorch
 4. Pydrive
 
-##実行する際はこちら
+## 実行する際はこちら
 setting.yamlにトークン等を入れておくこと
 ```
 python googledrive.py 
 ```
-
-
-sakamoto
 
