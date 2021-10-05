@@ -1,6 +1,7 @@
 from __future__ import division
 import time
-import torch 
+import torch
+from torch.functional import _return_counts 
 import torch.nn as nn
 from torch.autograd import Variable
 import numpy as np
@@ -15,7 +16,7 @@ import pandas as pd
 import random 
 import pickle as pkl
 import itertools
-
+import line
 class test_net(nn.Module):
     def __init__(self, num_layers, input_size):
         super(test_net, self).__init__()
@@ -76,7 +77,7 @@ def arg_parse():
     
     return parser.parse_args()
 
-def main():
+def main(fileid):
     args = arg_parse()
     
     scales = args.scales
@@ -101,6 +102,51 @@ def main():
 #        
 #        scale_indices = li
 
+    def sousin(images,cls):
+        #検出結果をlineに送る
+        num1 = 0 #検出したキンモクセイの花の数
+        num2 = 0 #検出した開花していないキンモクセイの数
+        num3 = 0 #検出した成熟したヤマトタチバナの実の数
+        num4 = 0 #検出した成熟してないヤマトタチバナの数
+        num5 = 0 #test
+        for i in enumerate(cls):
+            num_cls=int(i[-1])
+            print(num_cls)
+            if   num_cls == 0: num1 += 1 
+            elif num_cls == 1: num2 += 1 
+            elif num_cls == 2: num3 += 1
+            elif num_cls == 3: num4 += 1
+            elif num_cls == 56: num5 += 1 #test
+        print(num1,num2,num5)
+        print(images)
+        #キンモクセイ
+        if num1<0 and num3<0 and num2<=1:
+            message ="キンモクセイは開花していません"
+            line.linebot(images,message)
+        elif 0<num1<10 and num3<0 :
+            message ="キンモクセイが咲き始めました！！"
+            line.linebot(images,message)
+        elif 10<num1 and num3<0 :
+            message ="キンモクセイは満開です！！"
+            line.linebot(images,message)
+        #ヤマトタチバナ    
+        elif num1<0 and num3<0 and num4<=1:
+            message ="ヤマトタチバナの実は成熟してません"
+            line.linebot(images,message) 
+        elif num1<0 and 3<num3 :
+            message ="ヤマトタチバナの実は成熟してます！！"
+            line.linebot(images,message)
+        #test
+        elif 0<num5 :
+            print("test")
+            message ="test"
+            line.linebot(images,message)
+        else : 
+            print("何も検出されなかった")
+            message ="検出なし"
+            line.linebot(images,message)
+
+        return
     
 
     images = args.images
@@ -108,10 +154,10 @@ def main():
     confidence = float(args.confidence)
     nms_thesh = float(args.nms_thresh)
     start = 0
-
     CUDA = torch.cuda.is_available()
-
-    num_classes = 80
+    
+    #num_classes = 4
+    num_classes = 80 #test用
     classes = load_classes('data/coco.names') 
 
     #Set up the neural network
@@ -211,7 +257,7 @@ def main():
         #loops are slower than vectorised operations. 
         
         prediction = write_results(prediction, confidence, num_classes, nms = True, nms_conf = nms_thesh)
-        
+        print(load_classes)
         
         if type(prediction) == int:
             i += 1
@@ -235,14 +281,20 @@ def main():
         else:
             output = torch.cat((output,prediction))
             
-        
-        
+
+                    
+
 
         for im_num, image in enumerate(imlist[i*batch_size: min((i +  1)*batch_size, len(imlist))]):
             im_id = i*batch_size + im_num
-            objs = [classes[int(x[-1])] for x in output if int(x[0]) == im_id]
+            objs = [classes[int(x[-1])] for x in output if int(x[0]) == im_id]#検出したobject
             print("{0:20s} predicted in {1:6.3f} seconds".format(image.split("/")[-1], (end - start)/batch_size))
             print("{0:20s} {1:s}".format("Objects Detected:", " ".join(objs)))
+            print(image.split("/")[-1]) 
+            file_name = image.split("/")[-1]
+            cls= output[:,7].long()
+            print(fileid[i])
+            sousin(fileid[i],cls)
             print("----------------------------------------------------------")
         i += 1
 
@@ -256,7 +308,7 @@ def main():
         print("No detections were made")
         return()
         
-        
+    
     im_dim_list = torch.index_select(im_dim_list, 0, output[:,0].long())
     
     scaling_factor = torch.min(inp_dim/im_dim_list,1)[0].view(-1,1)
@@ -285,11 +337,13 @@ def main():
     draw = time.time()
 
 
+
+
     def write(x, batches, results): #検出時の処理　
         c1 = tuple(x[1:3].int())
         c2 = tuple(x[3:5].int())
         img = results[int(x[0])]
-        cls = int(x[-1]) #何を検出したか.変更すると何個検出したか。
+        cls = int(x[-1]) #何を検出したか.
         label = "{0}".format(classes[cls])
         color = random.choice(colors)
         cv2.rectangle(img, c1, c2,color, 1)
@@ -297,11 +351,20 @@ def main():
         c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
         cv2.rectangle(img, c1, c2,color, -1)
         cv2.putText(img, label, (c1[0], c1[1] + t_size[1] + 4), cv2.FONT_HERSHEY_PLAIN, 1, [225,255,255], 1)
-        return img
+
+        print("----------------------------------------------------------")
+        print("{:25s}: {:2.3f}".format("class_name", cls))
+        print(label)
+        print("----------------------------------------------------------")
+        return img 
+
+
+
     
+    #list(map(lambda x: clssname(x,im_batches)))
             
     list(map(lambda x: write(x, im_batches, orig_ims), output))
-      
+   
     det_names = pd.Series(imlist).apply(lambda x: "{}/det_{}".format(args.det,x.split("/")[-1]))
     
     list(map(cv2.imwrite, det_names, orig_ims))
@@ -320,16 +383,11 @@ def main():
     print("{:25s}: {:2.3f}".format("Drawing Boxes", end - draw))
     print("{:25s}: {:2.3f}".format("Average time_per_img", (end - load_batch)/len(imlist)))
     print("----------------------------------------------------------")
-
     
+    
+
+
+
     torch.cuda.empty_cache()
+    
     return()
-
-
-
-    
-    
-        
-        
-    
-    
