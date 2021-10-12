@@ -1,7 +1,5 @@
 import os
-import datetime
 import time
-import schedule
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import detect
@@ -27,7 +25,7 @@ def change_folder(folder_id):
     for f in drive.ListFile({'q': 'mimeType = "image/jpeg" and "{}" in parents'.format(drive_tempfolder_id)}).GetList():
         f['parents'] = [{'id': folder_id}]
         f.Upload()
-        print(f['parents'])
+        print(f['id'])
 
 def upload_file(file_path,folder_id):
         f = drive.CreateFile({"parents": [{'mimeType':'image/jpeg',"id": folder_id}]})
@@ -52,13 +50,21 @@ def download_recursively(save_folder, drive_folder_id):
                 download_recursively(os.path.join(save_folder, file['title']), file['id'])
             else:
                 file.GetContentFile(os.path.join(save_folder, file['title']))
+    
+      
+    
+   
 
 
-def main(): 
-#while True:    #テストのときに使用
+#def main(): 
+while True:    #テストのときに使用
+        gauth = GoogleAuth()
+        gauth.LocalWebserverAuth()
+
         print('0')
         download_recursively(save_folder, drive_tempfolder_id)
-        detect.main()
+        fileid = [ f['id'] for f in drive.ListFile({'q': '"{}" in parents'.format(drive_tempfolder_id)}).GetList()]
+        detect.main(fileid)
         
         
         change_folder(drive_savefolder_id)
@@ -79,12 +85,14 @@ def main():
         shutil.rmtree(target_dir)
         os.mkdir(target_dir)
         time.sleep(30)
-##テストのときはコメントアウト
-schedule.every().day.at("21:43").do(main) #毎日何時に起動するか
+
+        os.remove('credentials.json')
+#テストのときはコメントアウト
+'''schedule.every().day.at("21:43").do(main) #毎日何時に起動するか
 while True:
   schedule.run_pending()
   time.sleep(60)
-
+'''
 
 
    
